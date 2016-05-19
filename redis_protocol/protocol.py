@@ -1,21 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-DELIMITER = "\r\n"
+
+SIMPLE_STR_TYPE = b"+"
+ERROR_TYPE = b"-"
+INTEGER_TYPE = b":"
+BULK_STR_TYPE = b"$"
+ARRAY_TYPE = b"*"
+DELIMITER = b"\r\n"
 
 
-def encode(*args):
+def encode(obj):
     "Pack a series of arguments into a value Redis command"
+    if isinstance(obj, tuple) or isinstance(obj, list):
+        return encode_array(obj)
+    if isinstance(obj, int):
+        return encode_integer(obj)
+    if isinstance(obj, str):
+        obj = obj.encode('utf8')
+    if not isinstance(obj, bytes):
+        raise TypeError("Cannot encode {} types".format(type(obj)))
+    return encode_bulk_str(obj)
+
+
+def encode_integer(i):
     result = []
-    result.append("*")
-    result.append(str(len(args)))
+    result.append(INTEGER_TYPE)
+    result.append(str(i).encode('utf-8'))
     result.append(DELIMITER)
-    for arg in args:
-        result.append("$")
-        result.append(str(len(arg)))
-        result.append(DELIMITER)
-        result.append(arg)
-        result.append(DELIMITER)
-    return "".join(result)
+    return b"".join(result)
+
+
+def encode_bulk_str(s):
+    result = []
+    result.append(BULK_STR_TYPE)
+    result.append(bytes(str(len(s)).encode('utf8')))
+    result.append(DELIMITER)
+    result.append(s)
+    result.append(DELIMITER)
+    return b"".join(result)
+
+
+def encode_array(array):
+    result = []
+    result.append(ARRAY_TYPE)
+    result.append(bytes(str(len(array)).encode('utf8')))
+    result.append(DELIMITER)
+    for element in array:
+        result.append(encode(element))
+    return b"".join(result)
 
 
 def decode(data):
@@ -23,19 +55,19 @@ def decode(data):
     if index == -1:
         index = len(data)
     term = data[processed]
-    if term == "*":
-        return parse_multi_chunked(data)
-    elif term == "$":
-        return parse_chunked(data)
-    elif term == "+":
-        return parse_status(data)
-    elif term == "-":
-        return parse_error(data)
-    elif term == ":":
-        return parse_integer(data)
+    if term == ARRAY_TYPE:
+        return decode_array(data)
+    elif term == BULK_STR_TYPE:
+        return decode_bulk_str(data)
+    elif term == SIMPLE_STR_TYPE:
+        return decode_simple_str(data)
+    elif term == ERROR_TYPE:
+        return decode_error(data)
+    elif term == INTEGER_TYPE:
+        return decode_integer(data)
 
 
-def parse_stream(data):
+def decode_stream(data):
     cursor = 0
     data_len = len(data)
     result = []
