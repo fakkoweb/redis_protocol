@@ -18,7 +18,7 @@ def encode(obj):
     if isinstance(obj, str):
         obj = obj.encode('utf8')
     if not isinstance(obj, bytes):
-        raise TypeError("Cannot encode {} types".format(type(obj)))
+        raise TypeError("Cannot encode '{}' type".format(type(obj).__name__))
     return encode_bulk_str(obj)
 
 
@@ -62,6 +62,9 @@ def decode_stream(data):
 
 
 def decode(data, extra=False):
+    if not isinstance(data, bytes):
+        msg = "a bytes-like object is required, not {}"
+        raise TypeError(msg.format(type(data).__name__))
     type_ = data[0: 1]
     if type_ == ARRAY_TYPE:
         result, index = decode_array(data)
