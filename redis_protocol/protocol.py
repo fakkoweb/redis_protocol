@@ -56,7 +56,7 @@ def encode_array(array):
 def find_delimiter(data):
     index = data.find(DELIMITER)
     if index == -1:
-        raise ValueError("Could not find delimiter")
+        raise EOFError("Could not find delimiter")
     return index
 
 
@@ -113,10 +113,10 @@ def decode_bulk_str(data):
     start = end + len(DELIMITER)
     end = start + size
     if data[end: end + len(DELIMITER)] != DELIMITER:
-        raise ValueError("Buffer is not properly terminated")
+        raise TypeError("Buffer is not properly terminated")
     string = data[start: end]
     if len(string) != size:
-        raise ValueError("Not enough data in buffer to decode string")
+        raise EOFError("Not enough data in buffer to decode string")
     return string, end + len(DELIMITER)
 
 
