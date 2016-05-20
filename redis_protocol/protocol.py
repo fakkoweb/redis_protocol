@@ -64,27 +64,6 @@ def decode_stream(data):
     return result
 
 
-def decode_bulk_str_stream(stream):
-    data = bytearray()
-    data.extend(stream.read(1))
-    if data != BULK_STR_TYPE:
-        raise ValueError("Stream does not seem to contain a valid bulk string")
-    bytes_left = 0
-    index = -1
-    # Read enough data until we can determine the size of the string
-    while index == -1:
-        data.extend(stream.read(CHUNK_SIZE))
-        index = data.find(DELIMITER)
-    bytes_left = int(data[1:index]) - len(data) + index + len(DELIMITER)
-    while bytes_left > 0:
-        chunk_size = min(CHUNK_SIZE, bytes_left)
-        chunk = stream.read(chunk_size)
-        data.extend(chunk)
-        bytes_left -= len(chunk)
-    data = bytes(data)
-    return decode_bulk_str(data)[0]
- 
-
 def decode(data, extra=False):
     if not isinstance(data, bytes):
         msg = "a bytes-like object is required, not '{}'"

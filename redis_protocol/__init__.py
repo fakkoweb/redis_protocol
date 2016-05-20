@@ -7,7 +7,6 @@ __version__ = '0.0.1'
 from .protocol import (
     encode,
     decode,
-    decode_stream,
-    decode_bulk_str_stream)
+    decode_stream)
 
-__all__ = ["encode", "decode"]
+__all__ = ["encode", "decode", "decode_stream"]
