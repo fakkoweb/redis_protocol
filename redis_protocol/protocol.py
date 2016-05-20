@@ -63,7 +63,7 @@ def decode_stream(data):
 
 def decode(data, extra=False):
     if not isinstance(data, bytes):
-        msg = "a bytes-like object is required, not {}"
+        msg = "a bytes-like object is required, not '{}'"
         raise TypeError(msg.format(type(data).__name__))
     type_ = data[0: 1]
     if type_ == ARRAY_TYPE:
