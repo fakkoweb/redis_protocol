@@ -112,7 +112,7 @@ def decode_bulk_str(data):
     size = int(data[1: end])
     start = end + len(DELIMITER)
     end = start + size
-    if end >= len(data):
+    if end + len(DELIMITER) >= len(data):
         raise ValueError("Not enough data in buffer to decode string")
     return data[start: end], end + len(DELIMITER)
 
