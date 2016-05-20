@@ -25,7 +25,7 @@ def encode(obj):
 def encode_integer(i):
     result = []
     result.append(INTEGER_TYPE)
-    result.append(str(i).encode('utf-8'))
+    result.append(str(i).encode('utf8'))
     result.append(DELIMITER)
     return b"".join(result)
 
@@ -50,85 +50,72 @@ def encode_array(array):
     return b"".join(result)
 
 
-def decode(data):
-    processed, index = 0, data.find(DELIMITER)
-    if index == -1:
-        index = len(data)
-    term = data[processed]
-    if term == ARRAY_TYPE:
-        return decode_array(data)
-    elif term == BULK_STR_TYPE:
-        return decode_bulk_str(data)
-    elif term == SIMPLE_STR_TYPE:
-        return decode_simple_str(data)
-    elif term == ERROR_TYPE:
-        return decode_error(data)
-    elif term == INTEGER_TYPE:
-        return decode_integer(data)
-
-
 def decode_stream(data):
-    cursor = 0
-    data_len = len(data)
     result = []
-    while cursor < data_len:
-        pdata = data[cursor:]
-        index = pdata.find(DELIMITER)
-        count = int(pdata[1:index])
-
-        cmd = ''
-        start = index + len(DELIMITER)
-        for i in range(count):
-            chunk, length = parse_chunked(pdata, start)
-            start = length + len(DELIMITER)
-            cmd += " " + chunk
-        cursor += start
-        result.append(cmd.strip())
+    size = len(data)
+    start = 0
+    while start < size:
+        decoded, index = decode(data[start:], extra=True)
+        result.append(decoded)
+        start += index
     return result
 
 
-def parse_multi_chunked(data):
-    index = data.find(DELIMITER)
-    count = int(data[1:index])
-    result = []
-    start = index + len(DELIMITER)
-    for i in range(count):
-        chunk, length = parse_chunked(data, start)
-        start = length + len(DELIMITER)
-        result.append(chunk)
-    return result
-
-
-def parse_chunked(data, start=0):
-    index = data.find(DELIMITER, start)
-    if index == -1:
-        index = start
-    length = int(data[start + 1:index])
-    if length == -1:
-        if index + len(DELIMITER) == len(data):
-            return None
-        else:
-            return None, index
+def decode(data, extra=False):
+    type_ = data[0: 1]
+    if type_ == ARRAY_TYPE:
+        result, index = decode_array(data)
+    elif type_ == BULK_STR_TYPE:
+        result, index = decode_bulk_str(data)
+    elif type_ == SIMPLE_STR_TYPE:
+        result, index = decode_simple_str(data)
+    elif type_ == ERROR_TYPE:
+        result, index = decode_simple_str(data)
+    elif type_ == INTEGER_TYPE:
+        result, index = decode_integer(data)
     else:
-        result = data[index + len(DELIMITER):index + len(DELIMITER) + length]
-        return result if start == 0 else [result, index + len(DELIMITER) + length]
+        raise TypeError("Unknown type: {}".format(type_))
+    if extra:
+        result = (result, index)
+    return result
 
 
-def parse_status(data):
-    return [True, data[1:]]
+def decode_array(data):
+    result = []
+    start = data.find(DELIMITER)
+    size = int(data[1: start])
+    start += len(DELIMITER)
+    for _ in range(size):
+        decoded, index = decode(data[start:], extra=True)
+        result.append(decoded)
+        start += index + len(DELIMITER)
+    return result, start
 
 
-def parse_error(data):
-    return [False, data[1:]]
+def decode_bulk_str(data):
+    end = data.find(DELIMITER)
+    size = int(data[1: end])
+    start = end + len(DELIMITER)
+    end = start + size
+    return data[start: end], end
 
 
-def parse_integer(data):
-    return [int(data[1:])]
+def decode_simple_str(data):
+    end = data.find(DELIMITER)
+    result = data[1: end]
+    return result, end
+
+
+def decode_integer(data):
+    end = data.find(DELIMITER)
+    result = int(data[1: end])
+    return result, end
 
 
 if __name__ == '__main__':
     print(decode(encode("ping")))
     print((encode("set some value")))
     print(encode("foobar"))
-    data = '*3\r\n$3\r\nSET\r\n$15\r\nmemtier-8232902\r\n$2\r\nxx\r\n*3\r\n$3\r\nSET\r\n$15\r\nmemtier-8232902\r\n$2\r\nxx\r\n*3\r\n$3\r\nSET\r\n$15\r\nmemtier-7630684\r\n$3\r\nAAA\r\n'
-    print(parse_stream(data))
+    data = b'*3\r\n$3\r\nSET\r\n$15\r\nmemtier-8232902\r\n$2\r\nxx\r\n*3\r\n$3\r\nSET\r\n$15\r\nmemtier-8232902\r\n$2\r\nxx\r\n*3\r\n$3\r\nSET\r\n$15\r\nmemtier-7630684\r\n$3\r\nAAA\r\n'
+    print(decode(data))
+    print(decode_stream(data))
