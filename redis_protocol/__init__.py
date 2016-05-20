@@ -4,6 +4,10 @@
 __author__ = 'Young King'
 __email__ = 'yanckin@gmail.com'
 __version__ = '0.0.1'
-from .protocol import encode, decode, decode_stream
+from .protocol import (
+    encode,
+    decode,
+    decode_stream,
+    decode_bulk_str_stream)
 
 __all__ = ["encode", "decode"]
