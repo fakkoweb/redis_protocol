@@ -60,20 +60,20 @@ def find_delimiter(data):
     return index
 
 
-def decode_stream(data, extra=False):
+def decode_stream(data, show_index=False):
     result = []
     size = len(data)
     index = 0
     while index < size:
-        decoded, bytes_used = decode(data[index:], extra=True)
+        decoded, bytes_used = decode(data[index:], show_index=True)
         result.append(decoded)
         index += bytes_used
-    if extra:
+    if show_index:
         result = (result, index)
     return result
 
 
-def decode(data, extra=False):
+def decode(data, show_index=False):
     if not isinstance(data, bytes):
         msg = "a bytes-like object is required, not '{}'"
         raise TypeError(msg.format(type(data).__name__))
@@ -90,7 +90,7 @@ def decode(data, extra=False):
         result, index = decode_integer(data)
     else:
         raise TypeError("Unknown type: {}".format(type_))
-    if extra:
+    if show_index:
         result = (result, index)
     return result
 
@@ -101,7 +101,7 @@ def decode_array(data):
     count = int(data[1: start])
     start += len(DELIMITER)
     for _ in range(count):
-        decoded, index = decode(data[start:], extra=True)
+        decoded, index = decode(data[start:], show_index=True)
         result.append(decoded)
         start += index
     return result, start
@@ -112,9 +112,12 @@ def decode_bulk_str(data):
     size = int(data[1: end])
     start = end + len(DELIMITER)
     end = start + size
-    if end + len(DELIMITER) >= len(data):
+    if data[end: end + len(DELIMITER)] != DELIMITER:
+        raise ValueError("Buffer is not properly terminated")
+    string = data[start: end]
+    if len(string) != size:
         raise ValueError("Not enough data in buffer to decode string")
-    return data[start: end], end + len(DELIMITER)
+    return string, end + len(DELIMITER)
 
 
 def decode_simple_str(data):
