@@ -53,14 +53,23 @@ def encode_array(array):
     return b"".join(result)
 
 
-def decode_stream(data):
+def find_delimiter(data):
+    index = data.find(DELIMITER)
+    if index == -1:
+        raise ValueError("Could not find delimiter")
+    return index
+
+
+def decode_stream(data, extra=False):
     result = []
     size = len(data)
-    start = 0
-    while start < size:
-        decoded, index = decode(data[start:], extra=True)
+    index = 0
+    while index < size:
+        decoded, bytes_used = decode(data[index:], extra=True)
         result.append(decoded)
-        start += index
+        index += bytes_used
+    if extra:
+        result = (result, index)
     return result
 
 
@@ -88,10 +97,10 @@ def decode(data, extra=False):
 
 def decode_array(data):
     result = []
-    start = data.find(DELIMITER)
-    size = int(data[1: start])
+    start = find_delimiter(data)
+    count = int(data[1: start])
     start += len(DELIMITER)
-    for _ in range(size):
+    for _ in range(count):
         decoded, index = decode(data[start:], extra=True)
         result.append(decoded)
         start += index + len(DELIMITER)
@@ -99,21 +108,23 @@ def decode_array(data):
 
 
 def decode_bulk_str(data):
-    end = data.find(DELIMITER)
+    end = find_delimiter(data)
     size = int(data[1: end])
     start = end + len(DELIMITER)
     end = start + size
+    if end >= len(data):
+        raise ValueError("Not enough data in buffer to decode string")
     return data[start: end], end
 
 
 def decode_simple_str(data):
-    end = data.find(DELIMITER)
+    end = find_delimiter(data)
     result = data[1: end]
     return result, end
 
 
 def decode_integer(data):
-    end = data.find(DELIMITER)
+    end = find_delimiter(data)
     result = int(data[1: end])
     return result, end
 
