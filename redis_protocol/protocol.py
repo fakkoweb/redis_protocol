@@ -78,8 +78,9 @@ def decode_bulk_str_stream(stream):
     bytes_left = int(data[1:index]) - len(data) + index + len(DELIMITER)
     while bytes_left > 0:
         chunk_size = min(CHUNK_SIZE, bytes_left)
-        data.extend(stream.read(chunk_size))
-        bytes_left -= chunk_size
+        chunk = stream.read(chunk_size)
+        data.extend(chunk)
+        bytes_left -= len(chunk)
     data = bytes(data)
     return decode_bulk_str(data)[0]
  
