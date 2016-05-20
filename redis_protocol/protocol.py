@@ -64,25 +64,22 @@ def decode_stream(data):
 
 
 def decode_bulk_str_stream(stream):
-    bio = io.BytesIO()
-    bio.write(stream.read(1))
-    if bio.getvalue() != BULK_STR_TYPE:
+    data = stream.read(1)
+    if data != BULK_STR_TYPE:
         raise ValueError("Stream does not seem to contain a valid bulk string")
     bytes_left = 0
+    index = -1
     # Read enough data until we can determine the size of the string
-    while True:
-        bio.write(stream.read(CHUNK_SIZE))
-        data = bio.getvalue()
+    while index == -1:
+        data += stream.read(CHUNK_SIZE)
         index = data.find(DELIMITER)
-        if index != -1:
-           bytes_left = int(data[1:index]) - len(data) + index + len(DELIMITER)
-           break
+    bytes_left = int(data[1:index]) - len(data) + index + len(DELIMITER)
+    payload = []
     while bytes_left > 0:
         chunk_size = min(CHUNK_SIZE, bytes_left)
-        bio.write(stream.read(chunk_size))
+        payload.append(stream.read(chunk_size))
         bytes_left -= chunk_size
-    data = bio.getvalue()
-    bio.close()
+    data += b"".join(payload)
     return decode_bulk_str(data)[0]
  
 
