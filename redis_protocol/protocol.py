@@ -103,7 +103,7 @@ def decode_array(data):
     for _ in range(count):
         decoded, index = decode(data[start:], extra=True)
         result.append(decoded)
-        start += index + len(DELIMITER)
+        start += index
     return result, start
 
 
@@ -114,19 +114,19 @@ def decode_bulk_str(data):
     end = start + size
     if end >= len(data):
         raise ValueError("Not enough data in buffer to decode string")
-    return data[start: end], end
+    return data[start: end], end + len(DELIMITER)
 
 
 def decode_simple_str(data):
     end = find_delimiter(data)
     result = data[1: end]
-    return result, end
+    return result, end + len(DELIMITER)
 
 
 def decode_integer(data):
     end = find_delimiter(data)
     result = int(data[1: end])
-    return result, end
+    return result, end + len(DELIMITER)
 
 
 if __name__ == '__main__':
