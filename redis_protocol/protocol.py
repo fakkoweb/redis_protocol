@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import io
+
 SIMPLE_STR_TYPE = b"+"
 ERROR_TYPE = b"-"
 INTEGER_TYPE = b":"
 BULK_STR_TYPE = b"$"
 ARRAY_TYPE = b"*"
 DELIMITER = b"\r\n"
-
+CHUNK_SIZE = 8192
 
 def encode(obj):
     "Pack a series of arguments into a value Redis command"
@@ -60,6 +62,29 @@ def decode_stream(data):
         start += index
     return result
 
+
+def decode_bulk_str_stream(stream):
+    bio = io.BytesIO()
+    bio.write(stream.read(1))
+    if bio.getvalue() != BULK_STR_TYPE:
+        raise ValueError("Stream does not seem to contain a valid bulk string")
+    bytes_left = 0
+    # Read enough data until we can determine the size of the string
+    while True:
+        bio.write(stream.read(CHUNK_SIZE))
+        data = bio.getvalue()
+        index = data.find(DELIMITER)
+        if index != -1:
+           bytes_left = int(data[1:index]) - len(data) + index + len(DELIMITER)
+           break
+    while bytes_left > 0:
+        chunk_size = min(CHUNK_SIZE, bytes_left)
+        bio.write(stream.read(chunk_size))
+        bytes_left -= chunk_size
+    data = bio.getvalue()
+    bio.close()
+    return decode_bulk_str(data)[0]
+ 
 
 def decode(data, extra=False):
     if not isinstance(data, bytes):
