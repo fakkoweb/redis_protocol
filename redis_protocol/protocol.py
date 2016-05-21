@@ -112,12 +112,12 @@ def decode_bulk_str(data):
     size = int(data[1: end])
     start = end + len(DELIMITER)
     end = start + size
-    if data[end: end + len(DELIMITER)] != DELIMITER:
-        raise TypeError("Buffer is not properly terminated")
     string = data[start: end]
     if len(string) != size:
         raise EOFError("Not enough data in buffer to decode string")
-    return string, end + len(DELIMITER)
+    if data[end: end + len(DELIMITER)] != DELIMITER:
+        raise TypeError("Buffer is not properly terminated")
+   return string, end + len(DELIMITER)
 
 
 def decode_simple_str(data):
