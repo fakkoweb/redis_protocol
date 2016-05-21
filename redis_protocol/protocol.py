@@ -100,6 +100,8 @@ def decode_array(data):
     start = find_delimiter(data)
     count = int(data[1: start])
     start += len(DELIMITER)
+    if start >= len(data):
+        raise EOFError("Not enough data in buffer to decode array")
     for _ in range(count):
         decoded, index = decode(data[start:], show_index=True)
         result.append(decoded)
