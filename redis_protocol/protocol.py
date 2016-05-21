@@ -117,7 +117,7 @@ def decode_bulk_str(data):
         raise EOFError("Not enough data in buffer to decode string")
     if data[end: end + len(DELIMITER)] != DELIMITER:
         raise TypeError("Buffer is not properly terminated")
-   return string, end + len(DELIMITER)
+    return string, end + len(DELIMITER)
 
 
 def decode_simple_str(data):
