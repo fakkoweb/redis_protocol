@@ -99,19 +99,24 @@ def decode_array(data):
     result = []
     start = find_delimiter(data)
     count = int(data[1: start])
+    if count < 0:
+        return None, -1
     start += len(DELIMITER)
-    for _ in range(count):
-        if start >= len(data):
-            raise EOFError("Not enough data in buffer to decode array")
-        decoded, index = decode(data[start:], show_index=True)
-        result.append(decoded)
-        start += index
+    if count > 0:
+        for _ in range(count):
+            if start >= len(data):
+                raise EOFError("Not enough data in buffer to decode array")
+            decoded, index = decode(data[start:], show_index=True)
+            result.append(decoded)
+            start += index
     return result, start
 
 
 def decode_bulk_str(data):
     end = find_delimiter(data)
     size = int(data[1: end])
+    if size < 0:
+        return None, -1
     start = end + len(DELIMITER)
     end = start + size
     string = data[start: end]
