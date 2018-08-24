@@ -119,7 +119,7 @@ def decode_bulk_str(data):
         return None, -1
     start = end + len(DELIMITER)
     end = start + size
-    string = data[start: end]
+    string = str((data[start: end]).decode('utf8'))
     if len(string) != size:
         raise EOFError("Not enough data in buffer to decode string")
     if data[end: end + len(DELIMITER)] != DELIMITER:
@@ -129,7 +129,7 @@ def decode_bulk_str(data):
 
 def decode_simple_str(data):
     end = find_delimiter(data)
-    result = data[1: end]
+    result = str((data[1: end]).decode('utf8'))
     return result, end + len(DELIMITER)
 
 
